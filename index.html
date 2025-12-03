@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <title>SDC Hesaplama Aracı</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 24px;
+      background: #f5f5f5;
+    }
+
+    h1 {
+      margin-top: 0;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+      margin-top: 32px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 4px;
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+
+    label {
+      font-weight: 500;
+    }
+
+    input[type="number"], select {
+      padding: 8px 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      min-width: 160px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+    }
+
+    .checkbox-group label {
+      font-weight: 400;
+    }
+
+    button {
+      padding: 10px 18px;
+      border-radius: 4px;
+      border: none;
+      background: #0077cc;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+    }
+
+    .btn-secondary:hover {
+      background: #565e64;
+    }
+
+    .results {
+      margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: #fafafa;
+      border-radius: 6px;
+      padding: 16px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+
+    .card p {
+      margin: 2px 0;
+      font-size: 13px;
+    }
+
+    .alert {
+      margin-top: 16px;
+      padding: 10px 12px;
+      border-radius: 4px;
+      background: #fff3cd;
+      border: 1px solid #ffeeba;
+      font-size: 14px;
+    }
+
+    .info-text {
+      font-size: 13px;
+      color: #555;
+      margin-top: -6px;
+      margin-bottom: 10px;
+    }
+
+    .inline {
+      display: inline-block;
+      margin-right: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>SDC Hesaplama Aracı</h1>
+
+    <!-- BÖLÜM 1: Debiye göre cihaz seçimi -->
+    <h2 class="section-title">1) Debiye Göre Cihaz Seçimi</h2>
+    <p>Hava debisini girip hangi cihazların seçileceğini işaretleyin. Sistem, her seri için uygun modeli otomatik seçecektir.</p>
+
+    <form id="calcForm">
+      <div class="form-row">
+        <label for="airflow">Hava Debisi (m³/h):</label>
+        <input type="number" id="airflow" name="airflow" min="1" required />
+      </div>
+
+      <div class="form-row">
+        <span>Seçilecek cihazlar:</span>
+        <div class="checkbox-group">
+          <label><input type="checkbox" name="series" value="espSingle" checked> ESP Tek Geçiş</label>
+          <label><input type="checkbox" name="series" value="espDouble"> ESP Çift Geçiş</label>
+          <label><input type="checkbox" name="series" value="uvc" checked> UVC</label>
+          <label><input type="checkbox" name="series" value="carbon" checked> Karbon Filtre</label>
+          <label><input type="checkbox" name="series" value="plugFan" checked> Plug Fan</label>
+          <label><input type="checkbox" name="series" value="oilMistFan"> Oil Mist Fan</label>
+        </div>
+      </div>
+
+      <button type="submit">Hesapla</button>
+    </form>
+
+    <div id="message" class="alert" style="display:none;"></div>
+    <div id="results" class="results"></div>
+
+    <!-- BÖLÜM 2: Davlumbazdan debi hesabı -->
+    <h2 class="section-title">2) Davlumbaz Geometrisinden Debi (Q) Hesabı</h2>
+    <p>Davlumbaz tipi ve ölçülerine göre gerekli hava debisini hesaplayın. Hesap sonucu isterseniz yukarıdaki forma aktarılır.</p>
+
+    <div class="info-text">
+      U hesabı:<br/>
+      • Tip 1: U = A + B  &nbsp;• Tip 2: U = 2A + B  &nbsp;• Tip 3: U = 2(A + B)<br/>
+      Debi formülü: Q = 3600 × U × (h₂ − h₁) × Vₓ
+    </div>
+
+    <form id="hoodForm">
+      <div class="form-row">
+        <label for="hoodType">Davlumbaz Tipi:</label>
+        <select id="hoodType" name="hoodType">
+          <option value="type1">Tip 1 – U = A + B</option>
+          <option value="type2">Tip 2 – U = 2A + B</option>
+          <option value="type3">Tip 3 – U = 2(A + B)</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="inline">
+          <label for="A">A (m):</label><br/>
+          <input type="number" id="A" step="0.01" min="0" />
+        </div>
+        <div class="inline">
+          <label for="B">B (m):</label><br/>
+          <input type="number" id="B" step="0.01" min="0" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="inline">
+          <label for="h1">h₁ (m):</label><br/>
+          <input type="number" id="h1" step="0.01" min="0" />
+        </div>
+        <div class="inline">
+          <label for="h2">h₂ (m):</label><br/>
+          <input type="number" id="h2" step="0.01" min="0" />
+        </div>
+        <div class="inline">
+          <label for="vx">Vₓ (m/s):</label><br/>
+          <input type="number" id="vx" step="0.01" min="0" />
+        </div>
+      </div>
+
+      <button type="submit">Q Hesapla</button>
+      <button type="button" id="copyToAirflow" class="btn-secondary" style="display:none;">Bu debiyi yukarıya aktar</button>
+    </form>
+
+    <div id="hoodMessage" class="alert" style="display:none;"></div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
